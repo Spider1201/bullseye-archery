@@ -1,14 +1,1480 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bullseye-archery</title>
-    <script type="module" crossorigin src="./assets/index-BKEfAU_e.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Bg68m83O.css">
+    <title>Bullseye: Archery Challenge</title>
+    <style>
+      :root {
+        --sky-top: #a8e0ff;
+        --sky-mid: #dff7ff;
+        --hill-1: #6fc06b;
+        --hill-2: #4ca457;
+        --ground: #9a7a45;
+        --grass: #6dbd53;
+        --hud-bg: rgba(13, 22, 35, 0.72);
+        --panel-bg: rgba(12, 20, 28, 0.82);
+        --panel-line: rgba(255,255,255,0.12);
+        --accent: #f7c948;
+        --accent-2: #f97316;
+        --text: #f6fbff;
+        --muted: #b7d6f6;
+        --danger: #ff6961;
+        --success: #79f2ae;
+      }
+
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: linear-gradient(#a8e0ff 0%, #dff7ff 38%, #dff7ff 42%, #9fe0ac 100%);
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text);
+      }
+
+      body {
+        touch-action: none;
+      }
+
+      #app {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: linear-gradient(#a8e0ff 0%, #dff7ff 38%, #60c06d 100%);
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        background: linear-gradient(#a8e0ff 0%, #dff7ff 40%, #a1d68d 100%);
+      }
+
+      .hud {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 18px;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .player-box,
+      .stat-box,
+      .wind-box,
+      .panel,
+      .end-panel {
+        background: var(--hud-bg);
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      }
+
+      .player-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        max-width: min(60vw, 280px);
+      }
+
+      .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f8d76c, #f19840);
+        color: #102031;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 1.2rem;
+      }
+
+      .player-meta {
+        min-width: 0;
+      }
+
+      .player-name {
+        font-size: 0.94rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-account {
+        font-size: 0.7rem;
+        opacity: 0.76;
+        line-height: 1.2;
+      }
+
+      .right-cluster {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      .stat-box {
+        display: flex;
+        gap: 14px;
+        border-radius: 18px;
+        padding: 10px 14px;
+      }
+
+      .stat {
+        min-width: 72px;
+        text-align: center;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.62rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.7;
+      }
+
+      .stat-value {
+        display: block;
+        margin-top: 4px;
+        font-size: 1.4rem;
+        font-weight: 800;
+      }
+
+      .wind-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 18px;
+        padding: 10px 12px;
+        min-width: 130px;
+      }
+
+      .wind-arrow {
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 14px solid var(--accent);
+        transform-origin: center;
+        transition: transform 0.2s ease;
+      }
+
+      .wind-label {
+        font-size: 0.64rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.75;
+      }
+
+      .wind-value {
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .mute-btn,
+      .sign-btn,
+      .button,
+      .play-again {
+        pointer-events: auto;
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        color: var(--text);
+        cursor: pointer;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+
+      .mute-btn:hover,
+      .sign-btn:hover,
+      .button:hover,
+      .play-again:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+      }
+
+      .mute-btn {
+        margin-top: 12px;
+        padding: 9px 12px;
+        font-weight: 700;
+      }
+
+      .button,
+      .play-again,
+      .sign-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #08151a;
+        font-weight: 800;
+        padding: 12px 16px;
+      }
+
+      .sign-btn {
+        position: absolute;
+        right: 18px;
+        top: 18px;
+        z-index: 30;
+        display: none;
+      }
+
+      .sign-btn.visible {
+        display: inline-flex;
+      }
+
+      .center-panel {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        pointer-events: none;
+      }
+
+      .panel,
+      .end-panel {
+        pointer-events: auto;
+        width: min(560px, calc(100vw - 28px));
+        border-radius: 22px;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-line);
+        padding: 22px 20px 18px;
+        box-shadow: 0 18px 42px rgba(0,0,0,0.25);
+      }
+
+      .panel.hidden,
+      .end-panel.hidden {
+        display: none;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        letter-spacing: -0.04em;
+      }
+
+      .panel-sub {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .end-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .value-box {
+        background: rgba(255,255,255,0.04);
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 12px 10px;
+      }
+
+      .value-box small {
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        font-size: 0.62rem;
+      }
+
+      .value-box strong {
+        display: block;
+        margin-top: 8px;
+        font-size: clamp(1.3rem, 2vw, 1.8rem);
+      }
+
+      .leaderboard {
+        margin-top: 18px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        padding: 8px 10px;
+      }
+
+      .leaderboard h3 {
+        margin: 8px 8px 10px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+
+      .leaderboard ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .leaderboard li {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 8px;
+        border-radius: 10px;
+      }
+
+      .leaderboard li.current {
+        background: rgba(247,201,73,0.12);
+        border: 1px solid rgba(247,201,73,0.24);
+      }
+
+      .leaderboard .rank {
+        font-weight: 700;
+        min-width: 30px;
+      }
+
+      .leaderboard .name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .leaderboard .score {
+        font-weight: 800;
+      }
+
+      .panel-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 18px;
+      }
+
+      .play-again {
+        padding: 12px 20px;
+      }
+
+      .toast {
+        position: absolute;
+        left: 50%;
+        bottom: 82px;
+        transform: translateX(-50%) translateY(14px);
+        background: rgba(13,22,35,0.8);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 700;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        z-index: 40;
+        pointer-events: none;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      @media (max-width: 700px) {
+        .hud {
+          padding: 10px 12px;
+          gap: 8px;
+        }
+
+        .player-box {
+          max-width: 55vw;
+          padding: 8px 10px;
+        }
+
+        .right-cluster {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .stat-box {
+          gap: 10px;
+          padding: 8px 10px;
+        }
+
+        .stat {
+          min-width: 54px;
+        }
+
+        .wind-box {
+          min-width: 94px;
+          padding: 8px 10px;
+        }
+
+        .sign-btn {
+          right: 12px;
+          top: 12px;
+          padding: 10px 12px;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="hud">
+        <div class="player-box">
+          <div class="avatar" id="avatar">G</div>
+          <div class="player-meta">
+            <div class="player-name" id="playerName">Guest</div>
+            <div class="player-account" id="playerAccount">Guest</div>
+          </div>
+        </div>
+
+        <div class="right-cluster">
+          <div class="stat-box">
+            <div class="stat">
+              <span class="stat-label">Score</span>
+              <span class="stat-value" id="scoreValue">0</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Arrows</span>
+              <span class="stat-value" id="arrowsValue">10</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Bullseyes</span>
+              <span class="stat-value" id="bullValue">0</span>
+            </div>
+          </div>
+
+          <div class="wind-box">
+            <div class="wind-arrow" id="windArrow"></div>
+            <div>
+              <div class="wind-label">Wind</div>
+              <div class="wind-value" id="windValue">0.0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="signInBtn" class="sign-btn visible" type="button">Sign in with Start.ng</button>
+      <button id="muteBtn" class="mute-btn" type="button" aria-label="Mute sound">🔊 Sound</button>
+
+      <div id="endPanel" class="end-panel hidden" role="dialog" aria-live="polite">
+        <h2 class="panel-title">Round complete</h2>
+        <p class="panel-sub" id="resultText">You can shoot again.</p>
+        <div class="end-grid">
+          <div class="value-box">
+            <small>Score</small>
+            <strong id="finalScore">0</strong>
+          </div>
+          <div class="value-box">
+            <small>Bullseyes</small>
+            <strong id="finalBullseyes">0</strong>
+          </div>
+        </div>
+
+        <div class="leaderboard">
+          <h3>Top 5</h3>
+          <ul id="leaderboardList"></ul>
+        </div>
+
+        <div class="panel-actions">
+          <button class="play-again" id="playAgainBtn" type="button">Play again</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+      (function () {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreValue = document.getElementById('scoreValue');
+        const arrowsValue = document.getElementById('arrowsValue');
+        const bullValue = document.getElementById('bullValue');
+        const windValue = document.getElementById('windValue');
+        const windArrow = document.getElementById('windArrow');
+        const endPanel = document.getElementById('endPanel');
+        const finalScore = document.getElementById('finalScore');
+        const finalBullseyes = document.getElementById('finalBullseyes');
+        const resultText = document.getElementById('resultText');
+        const leaderboardList = document.getElementById('leaderboardList');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const signInBtn = document.getElementById('signInBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const playerNameEl = document.getElementById('playerName');
+        const playerAccountEl = document.getElementById('playerAccount');
+        const avatarEl = document.getElementById('avatar');
+        const toast = document.getElementById('toast');
+
+        const STARTNG_ORIGIN = 'https://start.ng';
+        const MAX_ARROWS = 10;
+        const state = {
+          width: 0,
+          height: 0,
+          score: 0,
+          arrowsLeft: MAX_ARROWS,
+          bullseyes: 0,
+          round: 1,
+          wind: 0,
+          dragStart: null,
+          dragCurrent: null,
+          currentArrow: null,
+          activeArrows: [],
+          popups: [],
+          target: null,
+          particles: [],
+          screenShake: 0,
+          gameOver: false,
+          started: true,
+          player: null,
+          connected: false,
+          audioReady: false,
+          muted: false,
+          lastTime: 0,
+          pendingLeaderboard: []
+        };
+
+        const pendingRequests = new Map();
+        let requestCounter = 0;
+        let connectFrame = null;
+        let connectWindow = null;
+        let audioCtx = null;
+
+        function clamp(value, min, max) {
+          return Math.min(max, Math.max(min, value));
+        }
+
+        function randomBetween(min, max) {
+          return min + Math.random() * (max - min);
+        }
+
+        function formatWind(value) {
+          return `${Math.abs(value).toFixed(1)} ${value >= 0 ? '→' : '←'}`;
+        }
+
+        function showToast(message) {
+          toast.textContent = message;
+          toast.classList.add('show');
+          clearTimeout(showToast.timer);
+          showToast.timer = setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        function ensureAudio() {
+          if (state.muted) return;
+          if (!audioCtx) {
+            const AudioCtor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtor) return;
+            audioCtx = new AudioCtor();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          state.audioReady = true;
+        }
+
+        function playTone(frequency, duration, type, volume) {
+          if (state.muted || !audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type || 'sine';
+          osc.frequency.value = frequency;
+          gain.gain.value = volume || 0.04;
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          const now = audioCtx.currentTime;
+          osc.start(now);
+          gain.gain.setValueAtTime(volume || 0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+          osc.stop(now + duration);
+        }
+
+        function playShotSound() {
+          ensureAudio();
+          playTone(140, 0.12, 'triangle', 0.05);
+        }
+
+        function playHitSound(score) {
+          ensureAudio();
+          const freq = score >= 10 ? 720 : score >= 8 ? 600 : score >= 6 ? 520 : 430;
+          playTone(freq, 0.18, 'sine', 0.06);
+          if (score >= 10) {
+            playTone(960, 0.12, 'square', 0.04);
+          }
+        }
+
+        function playMissSound() {
+          ensureAudio();
+          playTone(90, 0.2, 'sawtooth', 0.04);
+        }
+
+        function setMuteState(mute) {
+          state.muted = mute;
+          muteBtn.textContent = mute ? '🔇 Muted' : '🔊 Sound';
+          if (!mute && !audioCtx) ensureAudio();
+        }
+
+        muteBtn.addEventListener('click', function () {
+          setMuteState(!state.muted);
+          showToast(state.muted ? 'Muted' : 'Sound on');
+        });
+
+        function updateHud() {
+          scoreValue.textContent = String(state.score);
+          arrowsValue.textContent = String(state.arrowsLeft);
+          bullValue.textContent = String(state.bullseyes);
+          windValue.textContent = formatWind(state.wind);
+          windArrow.style.transform = `rotate(${Math.atan2(state.wind, 1) * 57.2958}deg)`;
+        }
+
+        function resizeCanvas() {
+          const ratio = window.devicePixelRatio || 1;
+          state.width = Math.max(1, window.innerWidth);
+          state.height = Math.max(1, window.innerHeight);
+          canvas.width = Math.floor(state.width * ratio);
+          canvas.height = Math.floor(state.height * ratio);
+          canvas.style.width = state.width + 'px';
+          canvas.style.height = state.height + 'px';
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          if (!state.target) createTarget();
+          if (!state.gameOver) {
+            state.target.x = clamp(state.target.x, state.width * 0.58, state.width * 0.9);
+          }
+        }
+
+        function createTarget() {
+          const targetRadius = clamp(46 + Math.random() * 28, 42, 84);
+          const x = clamp(randomBetween(state.width * 0.62, state.width * 0.9), state.width * 0.56, state.width * 0.94);
+          const y = clamp(randomBetween(state.height * 0.25, state.height * 0.46), 110, state.height * 0.56);
+          state.activeArrows = [];
+          state.currentArrow = null;
+          state.target = { x, y, radius: targetRadius, scoreRing: 1 };
+        }
+
+        function spawnWind() {
+          state.wind = randomBetween(-3.3, 3.3);
+          showToast(`Wind ${formatWind(state.wind)}`);
+          updateHud();
+        }
+
+        function resetRound() {
+          state.arrowsLeft = MAX_ARROWS;
+          state.bullseyes = 0;
+          state.score = 0;
+          state.gameOver = false;
+          state.activeArrows = [];
+          state.currentArrow = null;
+          state.dragStart = null;
+          state.dragCurrent = null;
+          endPanel.classList.add('hidden');
+          createTarget();
+          spawnWind();
+          updateHud();
+        }
+
+        function drawBackground() {
+          const sky = ctx.createLinearGradient(0, 0, 0, state.height);
+          sky.addColorStop(0, '#9ed8ff');
+          sky.addColorStop(0.42, '#dff7ff');
+          sky.addColorStop(0.7, '#d8efd4');
+          sky.addColorStop(1, '#73b858');
+          ctx.fillStyle = sky;
+          ctx.fillRect(0, 0, state.width, state.height);
+
+          const hill1 = ctx.createLinearGradient(0, state.height * 0.5, 0, state.height);
+          hill1.addColorStop(0, '#6bbd73');
+          hill1.addColorStop(1, '#3a8244');
+          ctx.fillStyle = hill1;
+          ctx.beginPath();
+          ctx.moveTo(0, state.height * 0.72);
+          ctx.quadraticCurveTo(state.width * 0.18, state.height * 0.52, state.width * 0.38, state.height * 0.72);
+          ctx.quadraticCurveTo(state.width * 0.6, state.height * 0.5, state.width * 0.84, state.height * 0.72);
+          ctx.quadraticCurveTo(state.width * 0.93, state.height * 0.66, state.width, state.height * 0.72);
+          ctx.lineTo(state.width, state.height);
+          ctx.lineTo(0, state.height);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#8a6548';
+          ctx.fillRect(0, state.height * 0.8, state.width, state.height * 0.2);
+
+          ctx.fillStyle = '#5d8d45';
+          for (let i = 0; i < 12; i++) {
+            const x = (i * 149) % (state.width + 200) - 40;
+            const y = state.height * 0.83 + (i % 2) * 14;
+            ctx.beginPath();
+            ctx.arc(x, y, 28, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        function drawArrowBody(x, y, angle, scale) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.strokeStyle = '#d8b97b';
+          ctx.lineWidth = 3 * scale;
+          ctx.beginPath();
+          ctx.moveTo(-26 * scale, 0);
+          ctx.lineTo(22 * scale, 0);
+          ctx.stroke();
+
+          ctx.fillStyle = '#f2d7a0';
+          ctx.fillRect(10 * scale, -2.5 * scale, 24 * scale, 5 * scale);
+          ctx.fillStyle = '#d9ab45';
+          ctx.beginPath();
+          ctx.moveTo(32 * scale, 0);
+          ctx.lineTo(46 * scale, 0);
+          ctx.lineTo(38 * scale, -3 * scale);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#c9d0d7';
+          ctx.fillRect(-30 * scale, -1.5 * scale, 10 * scale, 3 * scale);
+          ctx.fillStyle = '#7c4d2d';
+          ctx.fillRect(-34 * scale, -7 * scale, 6 * scale, 14 * scale);
+          ctx.restore();
+        }
+
+        function drawBow(x, y, pull) {
+          const drawX = x + 30;
+          const drawY = y + 48;
+          ctx.save();
+          ctx.translate(drawX, drawY);
+          ctx.strokeStyle = '#8b5a2b';
+          ctx.lineWidth = 7;
+          ctx.beginPath();
+          ctx.moveTo(-18, -40);
+          ctx.quadraticCurveTo(-10, 0, -18, 40);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(-16, -38);
+          ctx.lineTo(-18, 38);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ecd8b6';
+          ctx.lineWidth = 3;
+          const pullOffset = clamp(pull, 0, 1) * 34;
+          ctx.beginPath();
+          ctx.moveTo(-16, -36);
+          ctx.lineTo(-12 - pullOffset, 0);
+          ctx.lineTo(-16, 36);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        function drawArcher(style, x, y, scale) {
+          const s = style || {};
+          const body = (s.body || 'female').toLowerCase() === 'male' ? 'male' : 'female';
+          const skin = s.skinColor || '#d2a275';
+          const main = s.primaryColor || '#5d7cfa';
+          const secondary = s.secondaryColor || '#24364a';
+          const hairColor = s.hairColor || '#1a120f';
+          const hairType = s.hair || 'short';
+          const hatType = s.hat || 'none';
+          const accessory = s.accessory || 'none';
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(scale, scale);
+
+          ctx.fillStyle = secondary;
+          const torsoWidth = body === 'male' ? 42 : 38;
+          ctx.fillRect(-torsoWidth / 2, -38, torsoWidth, 64);
+
+          ctx.fillStyle = main;
+          const sleeveOffset = body === 'male' ? 10 : 8;
+          ctx.fillRect(-34, -30, 12, 54);
+          ctx.fillRect(22, -30, 12, 54);
+
+          ctx.fillStyle = skin;
+          ctx.beginPath();
+          ctx.arc(0, -68, 22, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = main;
+          ctx.fillRect(-18, -52, 36, 16);
+
+          ctx.fillStyle = secondary;
+          ctx.fillRect(-14, 26, 14, 56);
+          ctx.fillRect(0, 26, 14, 56);
+
+          ctx.fillStyle = skin;
+          ctx.fillRect(-12, 18, 10, 18);
+          ctx.fillRect(2, 18, 10, 18);
+
+          if (hairType === 'short') {
+            ctx.fillStyle = hairColor;
+            ctx.beginPath();
+            ctx.arc(0, -76, 22, Math.PI, 0);
+            ctx.fill();
+          }
+
+          if (hairType === 'afro') {
+            ctx.fillStyle = hairColor;
+            ctx.beginPath();
+            ctx.arc(0, -88, 25, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (hairType === 'braids') {
+            ctx.strokeStyle = hairColor;
+            ctx.lineWidth = 4;
+            for (let i = -2; i <= 2; i += 1) {
+              ctx.beginPath();
+              ctx.moveTo(i * 8, -82);
+              ctx.lineTo(i * 8 + 4, -112);
+              ctx.stroke();
+            }
+          }
+
+          if (hairType === 'bun') {
+            ctx.fillStyle = hairColor;
+            ctx.beginPath();
+            ctx.arc(0, -82, 14, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (hairType === 'dreads') {
+            ctx.strokeStyle = hairColor;
+            ctx.lineWidth = 3;
+            for (let i = -2; i <= 2; i += 1) {
+              ctx.beginPath();
+              ctx.moveTo(i * 10, -80);
+              ctx.lineTo(i * 10, -110);
+              ctx.stroke();
+            }
+          }
+
+          if (hairType === 'ponytail') {
+            ctx.fillStyle = hairColor;
+            ctx.fillRect(20, -60, 12, 42);
+            ctx.beginPath();
+            ctx.arc(22, -70, 12, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (hatType === 'cap') {
+            ctx.fillStyle = main;
+            ctx.beginPath();
+            ctx.ellipse(0, -94, 24, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (hatType === 'beanie') {
+            ctx.fillStyle = main;
+            ctx.beginPath();
+            ctx.arc(0, -94, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(0, -86, 21, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (hatType === 'tophat') {
+            ctx.fillStyle = main;
+            ctx.fillRect(-18, -108, 36, 10);
+            ctx.fillRect(-10, -122, 20, 18);
+          }
+
+          if (hatType === 'crown') {
+            ctx.fillStyle = '#f7d56b';
+            for (let i = 0; i < 5; i++) {
+              ctx.beginPath();
+              ctx.moveTo(-18 + i * 9, -106);
+              ctx.lineTo(-12 + i * 9, -122);
+              ctx.lineTo(-6 + i * 9, -106);
+              ctx.closePath();
+              ctx.fill();
+            }
+          }
+
+          if (accessory === 'glasses') {
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-18, -70, 12, 9);
+            ctx.strokeRect(6, -70, 12, 9);
+          }
+
+          if (accessory === 'earrings') {
+            ctx.strokeStyle = '#d7ab3a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(-28, -60, 5, 0, Math.PI * 2);
+            ctx.arc(28, -60, 5, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          if (accessory === 'beard') {
+            ctx.fillStyle = hairColor;
+            ctx.beginPath();
+            ctx.moveTo(-12, -56);
+            ctx.quadraticCurveTo(0, -28, 12, -56);
+            ctx.quadraticCurveTo(0, -44, -12, -56);
+            ctx.fill();
+          }
+
+          if (accessory === 'scarf') {
+            ctx.fillStyle = main;
+            ctx.beginPath();
+            ctx.moveTo(-20, -24);
+            ctx.lineTo(20, -24);
+            ctx.lineTo(28, 2);
+            ctx.lineTo(-28, 2);
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          if (accessory === 'backpack') {
+            ctx.fillStyle = secondary;
+            ctx.fillRect(-18, -20, 38, 32);
+          }
+
+          ctx.restore();
+        }
+
+        function drawBackgroundArcher() {
+          const x = state.width * 0.18;
+          const y = state.height * 0.76;
+          drawArcher(getPlayerStyle(), x, y, 1.4);
+          const pull = state.dragStart && state.dragCurrent
+            ? clamp(Math.hypot(state.dragStart.x - state.dragCurrent.x, state.dragStart.y - state.dragCurrent.y) / 120, 0, 1)
+            : 0;
+          drawBow(x, y - 98, pull);
+        }
+
+        function getPlayerStyle() {
+          const base = state.player && state.player.style ? state.player.style : {
+            body: 'female',
+            primaryColor: '#7ec4ff',
+            secondaryColor: '#2d4c72',
+            skinColor: '#d5a67a',
+            hairColor: '#201a18',
+            hair: 'short',
+            hat: 'none',
+            accessory: 'none'
+          };
+
+          return {
+            body: base.body === 'male' ? 'male' : 'female',
+            primaryColor: base.primaryColor || '#7ec4ff',
+            secondaryColor: base.secondaryColor || '#2d4c72',
+            skinColor: base.skinColor || '#d5a67a',
+            hairColor: base.hairColor || '#201a18',
+            hair: ['short', 'afro', 'braids', 'bun', 'ponytail', 'dreads', 'bald'].includes(base.hair) ? base.hair : 'short',
+            hat: ['none', 'cap', 'beanie', 'tophat', 'crown'].includes(base.hat) ? base.hat : 'none',
+            accessory: ['none', 'glasses', 'earrings', 'beard', 'scarf', 'backpack'].includes(base.accessory) ? base.accessory : 'none'
+          };
+        }
+
+        function drawTarget() {
+          if (!state.target) return;
+          const { x, y, radius } = state.target;
+          const rings = [
+            { color: '#f1f5f9', radius: radius * 0.2 },
+            { color: '#ef4444', radius: radius * 0.38 },
+            { color: '#facc15', radius: radius * 0.58 },
+            { color: '#38bdf8', radius: radius * 0.78 },
+            { color: '#1d4ed8', radius: radius * 0.98 }
+          ];
+
+          for (let i = 0; i < rings.length; i++) {
+            ctx.beginPath();
+            ctx.arc(x, y, rings[i].radius, 0, Math.PI * 2);
+            ctx.fillStyle = rings[i].color;
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius * 0.12, 0, Math.PI * 2);
+          ctx.fillStyle = '#f4e05d';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius * 0.9, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        function drawAimPreview() {
+          if (!state.dragStart || !state.dragCurrent || state.currentArrow || state.gameOver) return;
+
+          const start = { x: state.width * 0.18 + 38, y: state.height * 0.76 - 50 };
+          const dx = state.dragStart.x - state.dragCurrent.x;
+          const dy = state.dragStart.y - state.dragCurrent.y;
+          let vx = clamp(dx * 0.24, -18, 18);
+          let vy = clamp(dy * 0.24, -18, 18);
+
+          let x = start.x;
+          let y = start.y;
+          ctx.save();
+          ctx.setLineDash([5, 6]);
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+          ctx.lineWidth = 1.5;
+          for (let i = 0; i < 16; i++) {
+            x += vx * 1.2;
+            y += vy * 1.2;
+            vy += 0.14 * 0.9;
+            vx += state.wind * 0.015 * 60;
+            if (i % 2 === 0) {
+              ctx.beginPath();
+              ctx.arc(x, y, 3, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(255,255,255,0.7)';
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        }
+
+        function getPointerPos(event) {
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+          };
+        }
+
+        function beginDrag(event) {
+          if (state.currentArrow || !state.target || state.gameOver) return;
+          event.preventDefault();
+          const pos = getPointerPos(event);
+          state.dragStart = { x: pos.x, y: pos.y };
+          state.dragCurrent = { x: pos.x, y: pos.y };
+        }
+
+        function moveDrag(event) {
+          if (!state.dragStart || state.currentArrow || !state.target || state.gameOver) return;
+          const pos = getPointerPos(event);
+          state.dragCurrent = pos;
+        }
+
+        function endDrag() {
+          if (!state.dragStart || state.currentArrow || state.gameOver) return;
+          const start = { x: state.width * 0.18 + 38, y: state.height * 0.76 - 50 };
+          const dx = state.dragStart.x - state.dragCurrent.x;
+          const dy = state.dragStart.y - state.dragCurrent.y;
+          const pull = Math.hypot(dx, dy);
+          if (pull < 10) {
+            state.dragStart = null;
+            state.dragCurrent = null;
+            return;
+          }
+
+          const power = 0.24;
+          const vx = clamp(dx * power, -18, 18);
+          const vy = clamp(dy * power, -18, 18);
+
+          const arrow = {
+            x: start.x,
+            y: start.y,
+            vx: vx,
+            vy: vy,
+            gravity: 0.14,
+            radius: 4,
+            hit: false,
+            stuck: false,
+            active: true,
+            trail: []
+          };
+
+          state.currentArrow = arrow;
+          state.activeArrows.push(arrow);
+          state.arrowsLeft -= 1;
+          updateHud();
+          playShotSound();
+          state.dragStart = null;
+          state.dragCurrent = null;
+        }
+
+        function scoreRingFromDistance(distance, radius) {
+          const ratios = [0.2, 0.38, 0.58, 0.78, 1];
+          const scoreMap = [10, 8, 6, 4, 2];
+          for (let i = 0; i < ratios.length; i++) {
+            if (distance <= radius * ratios[i]) return scoreMap[i];
+          }
+          return 0;
+        }
+
+        function createParticles(x, y, color, count) {
+          for (let i = 0; i < count; i++) {
+            state.particles.push({
+              x,
+              y,
+              vx: randomBetween(-2.5, 2.5),
+              vy: randomBetween(-1.8, 1.5),
+              life: randomBetween(0.4, 0.9),
+              color
+            });
+          }
+        }
+
+        function createPopup(x, y, text, color) {
+          state.popups.push({ x, y, text, color, life: 1.2, yVel: -0.9 });
+        }
+
+        function resolveArrowHit(arrow) {
+          const d = Math.hypot(arrow.x - state.target.x, arrow.y - state.target.y);
+          const scoreValue = scoreRingFromDistance(d, state.target.radius);
+          const isBullseye = scoreValue === 10;
+
+          arrow.hit = true;
+          arrow.stuck = true;
+          arrow.active = false;
+          state.currentArrow = null;
+
+          state.score += scoreValue;
+          if (isBullseye) state.bullseyes += 1;
+          updateHud();
+
+          createParticles(state.target.x, state.target.y, isBullseye ? '#ffd45c' : '#7ef0b7', isBullseye ? 22 : 14);
+          createPopup(state.target.x, state.target.y - 12, `+${scoreValue}`, isBullseye ? '#ffd45c' : '#7ef0b7');
+          if (isBullseye) {
+            state.screenShake = 18;
+            showToast('Bullseye!');
+          }
+          playHitSound(scoreValue);
+
+          if (state.arrowsLeft <= 0) {
+            queueNextRound();
+          } else {
+            state.target = null;
+            setTimeout(() => { if (!state.gameOver) createTarget(); }, 160);
+          }
+        }
+
+        function queueNextRound() {
+          state.gameOver = true;
+          setTimeout(() => {
+            finishRound();
+          }, 200);
+        }
+
+        function finishRound() {
+          finalScore.textContent = String(state.score);
+          finalBullseyes.textContent = String(state.bullseyes);
+          resultText.textContent = `You scored ${state.score} with ${state.bullseyes} bullseyes.`;
+          leaderboardList.innerHTML = '<li><span class="name">Loading leaderboard…</span></li>';
+          if (state.connected) {
+            if (state.player && state.player.id) {
+              askStartNg({ type: 'startng:score', score: state.score, bullseyes: state.bullseyes }, 'startng:scoreSaved')
+                .then((response) => {
+                  const result = response && response.result ? response.result : response;
+                  const rank = result && result.rank != null && Number.isFinite(Number(result.rank)) ? Number(result.rank) : null;
+                  const improved = result && result.improved === true;
+                  resultText.textContent = improved
+                    ? `Saved! New best and rank #${rank}.`
+                    : rank ? `Saved. Rank #${rank}.` : 'Score saved.';
+                  fetchLeaderboard();
+                })
+                .catch(() => {
+                  resultText.textContent = 'Could not save your score. Check your connection and try again.';
+                  fetchLeaderboard();
+                });
+            } else {
+              resultText.textContent = 'Guests can play. Sign in to save a score.';
+              fetchLeaderboard();
+            }
+          } else {
+            resultText.textContent = 'No Start.ng connection detected. You can still play in guest mode.';
+            fetchLeaderboard();
+          }
+          endPanel.classList.remove('hidden');
+        }
+
+        function fetchLeaderboard() {
+          askStartNg({ type: 'startng:leaderboard', limit: 5 }, 'startng:leaderboardData')
+            .then((response) => {
+              const entries = response && Array.isArray(response.entries) ? response.entries.slice(0, 5) : [];
+              if (!entries.length) {
+                leaderboardList.innerHTML = '<li><span class="name">No scores yet</span><span class="score">—</span></li>';
+                return;
+              }
+
+              entries.forEach((entry, index) => {
+                const li = document.createElement('li');
+                const isCurrent = state.player && entry.player_id === state.player.id;
+                li.className = isCurrent ? 'current' : '';
+                const rank = document.createElement('span');
+                rank.className = 'rank';
+                rank.textContent = `#${entry.rank || index + 1}`;
+                const name = document.createElement('span');
+                name.className = 'name';
+                name.textContent = typeof entry.name === 'string' ? entry.name : 'Unknown';
+                const score = document.createElement('span');
+                score.className = 'score';
+                score.textContent = Number.isFinite(Number(entry.score)) ? String(Number(entry.score)) : '—';
+                li.append(rank, name, score);
+                leaderboardList.appendChild(li);
+              });
+            })
+            .catch(() => {
+              leaderboardList.innerHTML = '<li><span class="name">Leaderboard unavailable</span><span class="score">—</span></li>';
+            });
+        }
+
+        function updateArrowPhysics(dt) {
+          const arrows = state.activeArrows.slice();
+          arrows.forEach((arrow) => {
+            if (!arrow.active) return;
+            arrow.x += arrow.vx * dt * 1.2;
+            arrow.y += arrow.vy * dt * 1.2;
+            arrow.vy += arrow.gravity * dt * 0.9;
+            arrow.vx += state.wind * 0.015 * dt * 60;
+            arrow.trail.push({ x: arrow.x, y: arrow.y });
+            if (arrow.trail.length > 10) arrow.trail.shift();
+
+            if (arrow.y > state.height * 0.8 || arrow.x > state.width + 40 || arrow.x < -40) {
+              arrow.active = false;
+              state.currentArrow = null;
+              playMissSound();
+              if (state.arrowsLeft <= 0) queueNextRound();
+              else {
+                state.target = null;
+                setTimeout(() => { if (!state.gameOver) createTarget(); }, 150);
+              }
+              return;
+            }
+
+            if (state.target) {
+              const distance = Math.hypot(arrow.x - state.target.x, arrow.y - state.target.y);
+              if (distance <= state.target.radius + 8) {
+                resolveArrowHit(arrow);
+              }
+            }
+          });
+        }
+
+        function drawArrowFlight() {
+          state.activeArrows.forEach((arrow) => {
+            if (!arrow.active) return;
+            if (arrow.trail.length > 1) {
+              ctx.beginPath();
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = 'rgba(239, 215, 163, 0.8)';
+              arrow.trail.forEach((point, idx) => {
+                if (idx === 0) ctx.moveTo(point.x, point.y);
+                else ctx.lineTo(point.x, point.y);
+              });
+              ctx.stroke();
+            }
+            const angle = Math.atan2(arrow.vy, arrow.vx);
+            drawArrowBody(arrow.x, arrow.y, angle, 1.1);
+          });
+
+          if (state.currentArrow && state.currentArrow.hit) {
+            const arrow = state.currentArrow;
+            const angle = Math.atan2(arrow.vy, arrow.vx);
+            drawArrowBody(arrow.x, arrow.y, angle, 1.1);
+          }
+        }
+
+        function drawStuckArrows() {
+          state.activeArrows.forEach((arrow) => {
+            if (arrow.hit && arrow.stuck) {
+              const angle = Math.atan2(arrow.vy, arrow.vx);
+              drawArrowBody(arrow.x, arrow.y, angle, 1.1);
+            }
+          });
+        }
+
+        function drawParticles() {
+          state.particles.forEach((p) => {
+            ctx.beginPath();
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
+        }
+
+        function drawPopups() {
+          state.popups.forEach((popup) => {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, popup.life);
+            ctx.fillStyle = popup.color;
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(popup.text, popup.x, popup.y);
+            ctx.restore();
+          });
+        }
+
+        function drawScene() {
+          ctx.clearRect(0, 0, state.width, state.height);
+          let shakeX = 0;
+          let shakeY = 0;
+          if (state.screenShake > 0) {
+            shakeX = randomBetween(-state.screenShake, state.screenShake);
+            shakeY = randomBetween(-state.screenShake, state.screenShake);
+            state.screenShake *= 0.88;
+          }
+          ctx.save();
+          ctx.translate(shakeX, shakeY);
+          drawBackground();
+          if (state.target) drawTarget();
+          drawAimPreview();
+          drawBackgroundArcher();
+          drawArrowFlight();
+          drawStuckArrows();
+          drawParticles();
+          drawPopups();
+          ctx.restore();
+        }
+
+        function updateParticles(dt) {
+          state.particles = state.particles.filter((p) => {
+            p.x += p.vx * dt;
+            p.y += p.vy * dt * 0.8;
+            p.life -= dt * 0.03;
+            return p.life > 0;
+          });
+
+          state.popups = state.popups.filter((p) => {
+            p.y += p.yVel * dt * 0.75;
+            p.life -= dt * 0.03;
+            return p.life > 0;
+          });
+        }
+
+        function updateHudAndRound() {
+          updateHud();
+          if (!state.target) createTarget();
+        }
+
+        function animate(ts) {
+          const dt = clamp((ts - (state.lastTime || ts)) / 16.666, 0.5, 2);
+          state.lastTime = ts;
+          if (!state.gameOver) updateArrowPhysics(dt);
+          updateParticles(dt);
+          drawScene();
+          requestAnimationFrame(animate);
+        }
+
+        function getCurrentPlayerName(player) {
+          if (!player) return 'Guest';
+          return (player.name && player.name.trim()) || 'Guest';
+        }
+
+        function applyPlayer(player) {
+          state.player = player || null;
+          const displayName = getCurrentPlayerName(player);
+          playerNameEl.textContent = displayName;
+          avatarEl.textContent = displayName.charAt(0).toUpperCase() || 'G';
+          playerAccountEl.textContent = player && player.account ? '@' + player.account : 'Guest';
+        }
+
+        function ensureConnectFrame() {
+          if (connectFrame) return connectFrame;
+          connectFrame = new Promise((resolve, reject) => {
+            const frame = document.createElement('iframe');
+            let loadTimeout;
+            frame.setAttribute('title', 'Start.ng connect');
+            frame.setAttribute('aria-hidden', 'true');
+            frame.style.position = 'absolute';
+            frame.style.width = '1px';
+            frame.style.height = '1px';
+            frame.style.opacity = '0';
+            frame.style.pointerEvents = 'none';
+            frame.style.border = '0';
+            connectWindow = frame.contentWindow;
+            frame.onload = () => {
+              clearTimeout(loadTimeout);
+              resolve(frame);
+            };
+            frame.onerror = () => {
+              clearTimeout(loadTimeout);
+              reject(new Error('Start.ng connection iframe failed to load.'));
+            };
+            frame.src = 'https://start.ng/connect';
+            document.body.appendChild(frame);
+            loadTimeout = setTimeout(() => reject(new Error('Start.ng connection iframe timed out.')), 5000);
+            window.addEventListener('message', function (event) {
+              if (event.origin !== STARTNG_ORIGIN || event.source !== connectWindow) return;
+              const payload = event.data;
+              if (!payload || typeof payload !== 'object' || !payload.requestId) return;
+              const pending = pendingRequests.get(payload.requestId);
+              if (!pending) return;
+              clearTimeout(pending.timeoutId);
+              pendingRequests.delete(payload.requestId);
+              if (payload.type === pending.expectedType) pending.resolve(payload);
+              else pending.reject(new Error(`Unexpected Start.ng reply: ${payload.type || 'unknown'}.`));
+            });
+          });
+          return connectFrame;
+        }
+
+        function askStartNg(payload, expectedType) {
+          return new Promise((resolve, reject) => {
+            const host = location.hostname;
+            const allowed = host === 'start.ng' || host.endsWith('.start.ng') || host === 'localhost' || host === '127.0.0.1';
+            if (!allowed) {
+              reject(new Error('Start.ng is unavailable in this environment.'));
+              return;
+            }
+            ensureConnectFrame().then((frame) => {
+              const requestId = 'req-' + Date.now() + '-' + (++requestCounter);
+              const timeoutId = setTimeout(() => {
+                pendingRequests.delete(requestId);
+                reject(new Error('Start.ng request timed out.'));
+              }, 5000);
+              pendingRequests.set(requestId, { expectedType, resolve, reject, timeoutId });
+              frame.contentWindow.postMessage({ ...payload, requestId }, STARTNG_ORIGIN);
+            }).catch(reject);
+          });
+        }
+
+        function refreshStartNg() {
+          askStartNg({ type: 'startng:whoami' }, 'startng:user')
+            .then((reply) => {
+              const player = reply && (reply.user || reply.guest) ? (reply.user || reply.guest) : null;
+              applyPlayer(player || null);
+              state.connected = Boolean(reply && reply.user);
+              signInBtn.classList.toggle('visible', !state.connected);
+            })
+            .catch(() => {
+              applyPlayer(null);
+              state.connected = false;
+              signInBtn.classList.add('visible');
+            });
+        }
+
+        signInBtn.addEventListener('click', function () {
+          const returnTo = encodeURIComponent(location.origin + location.pathname);
+          location.href = 'https://start.ng/?return_to=' + returnTo;
+        });
+
+        playAgainBtn.addEventListener('click', function () {
+          resetRound();
+          state.round += 1;
+        });
+
+        canvas.addEventListener('pointerdown', beginDrag);
+        canvas.addEventListener('pointermove', moveDrag);
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('pointercancel', function () {
+          state.dragStart = null;
+          state.dragCurrent = null;
+        });
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('focus', refreshStartNg);
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') refreshStartNg();
+        });
+
+        function init() {
+          resizeCanvas();
+          state.target = null;
+          resetRound();
+          refreshStartNg();
+          requestAnimationFrame(animate);
+        }
+
+        init();
+      })();
+    </script>
   </body>
 </html>

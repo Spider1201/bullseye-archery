@@ -2,8 +2,7 @@
   "leaderboard": {
     "stats": [
       { "key": "score", "label": "Score", "order": "highest" },
-      { "key": "bullseyes", "label": "Bullseyes", "order": "highest" },
-      { "key": "accuracy", "label": "Accuracy %", "order": "highest" }
+      { "key": "bullseyes", "label": "Bullseyes", "order": "highest" }
     ]
   }
 }
